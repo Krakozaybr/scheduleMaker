@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# DB
+.sqlite
+
+# Images
+scheduler/data/store/images
+!scheduler/data/store/images/default.png
+
+# IDE
+.idea
