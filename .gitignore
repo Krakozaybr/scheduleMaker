@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # DB
-.sqlite
+*.sqlite
 
 # Images
 scheduler/data/store/images
