@@ -42,23 +42,7 @@ def check_db_exists(func):
     return wrapper
 
 
-def create_main_db():
-    """
-    Creates database with data about teachers, lessons, classrooms
-    :raises TableAlreadyExistsException if table with such name already exists
-    """
-
-    name = MAIN_DB_NAME
-
-    if db_exists(name):
-        raise DatabaseAlreadyExistsException
-
-    filename = _get_db_filename(name)
-    create_commands = sql_commands.CREATE_MAIN_DB_TABLES
-    _create(create_commands, filename)
-
-
-def create_schedule_db(name: str):
+def create_db_with_models(name: str, *models):
     """
     Creates database with schedule structure
     :param name: DB name
@@ -69,7 +53,13 @@ def create_schedule_db(name: str):
         raise DatabaseAlreadyExistsException
 
     filename = _get_db_filename(name)
-    create_commands = sql_commands.CREATE_SCHEDULE_TABLES
+    create_commands = []
+    for model in models:
+        command = sql_commands.CREATE_DB_TABLE % (
+            model.get_table_name(),
+            model.to_sql()
+        )
+        create_commands.append(command)
     _create(create_commands, filename)
 
 
@@ -85,10 +75,9 @@ def delete_db(name):
     os.remove(filename)
 
 
-def get_all_schedules_db():
+def get_dbs():
     result = []
     for filename in glob.glob(os.path.join(STORE_DIR, '*.sqlite')):
         name = os.path.splitext(os.path.basename(filename))[0]
-        if name != MAIN_DB_NAME:
-            result.append(name)
+        result.append(name)
     return result

@@ -74,7 +74,7 @@ def insert_many(db_name: str, table: str, fields: tuple[str], values_sets: tuple
             new_vals = []
             for val in values:
                 if isinstance(val, int):
-                    new_vals.append(val)
+                    new_vals.append(str(val))
                 else:
                     new_vals.append(f'"{val}"')
             command = INSERT % (table, ', '.join(fields), ', '.join(new_vals))

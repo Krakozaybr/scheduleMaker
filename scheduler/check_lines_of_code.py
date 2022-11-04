@@ -18,7 +18,7 @@ while ways:
                 if l and not l.startswith('#') and not comment_now:
                     without_spaces += 1
                 total += 1
-    elif os.path.isdir(filename):
+    elif os.path.isdir(filename) and os.path.basename(filename) != 'skeletons':
         files = os.listdir(filename)
         for file in files:
             ways.append(os.path.join(filename, file))
