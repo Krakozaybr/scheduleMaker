@@ -87,7 +87,7 @@ class ForeignField(Field):
             super().__init__(parent.manager[int(foreign_obj_id)], parent)
 
         def to_sql(self):
-            return self._value.id.value
+            return self._value.id
 
 
 class ListField(Field):

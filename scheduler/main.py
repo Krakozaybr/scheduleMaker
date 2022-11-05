@@ -28,7 +28,7 @@ def test_teacher():
     print(CREATE_DB_TABLE % (Lesson.get_table_name(), lesson.to_sql()))
     print(lesson.get_data())
     print(INSERT % (
-    lesson.get_table_name(), ', '.join(map(lambda x: x.name, lesson.fields)), ', '.join(lesson.get_data())))
+    lesson.get_table_name(), ', '.join(map(lambda x: x.name, lesson.fields)), ', '.join(map(str, lesson.get_data()))))
 
 
 def test_image():
@@ -58,5 +58,4 @@ def db_test2():
 
 if __name__ == '__main__':
     # start()
-    teacher = Teacher(id=1, name='lol')
-    print(type(teacher.db_name))
+    test_teacher()

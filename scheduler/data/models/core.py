@@ -38,7 +38,7 @@ class DBModel:
 
     @classmethod
     def new(cls, **kwargs):
-        kwargs['id'] = cls.max_id + 1
+        kwargs['id'] = cls.max_id.value + 1
         result = cls(**kwargs)
         result.created = True
         return result
@@ -114,8 +114,11 @@ class DBModel:
         for vals in get(db_name, cls.get_table_name(), [f.name for f in cls.fields]):
             cls(**{field.name: val for field, val in zip(cls.fields, vals)})
 
+    def get_holder(self, name):
+        return super().__getattribute__(name)
+
     def get_data(self):
-        return [getattr(self, field.name).to_sql() for field in self.fields]
+        return [self.get_holder(field.name).to_sql() for field in self.fields]
 
     def get_data_without_id(self):
-        return [getattr(self, field.name).to_sql() for field in self.fields if field.name != 'id']
+        return [self.get_holder(field.name).to_sql() for field in self.fields if field.name != 'id']
