@@ -26,11 +26,11 @@ class DBModel:
         for field in self.fields:
             setattr(self, field.name, field.create_holder(kwargs[field.name]))
         # Initializing objects
-        self.objects[self.id.value] = self
+        self.objects[self.id] = self
 
         # Checking max_id
-        if self.id.value > self.max_id.value:
-            self.max_id.value = self.id.value
+        if self.id > self.max_id:
+            self.max_id = self.id
         self.__post_init__()
 
     def __post_init__(self):
@@ -38,7 +38,7 @@ class DBModel:
 
     @classmethod
     def new(cls, **kwargs):
-        kwargs['id'] = cls.max_id.value + 1
+        kwargs['id'] = cls.max_id + 1
         result = cls(**kwargs)
         result.created = True
         return result
@@ -46,7 +46,7 @@ class DBModel:
     def save(self):
         if self.created:
             insert(
-                self.db_name.value,
+                self.db_name,
                 self.get_table_name(),
                 tuple(field.name for field in self.fields),
                 self.get_data()
@@ -54,12 +54,27 @@ class DBModel:
             self.created = False
         else:
             update_by_id(
-                self.db_name.value,
+                self.db_name,
                 self.get_table_name(),
-                self.id.value,
+                self.id,
                 tuple(field.name for field in self.fields if field.name != 'id'),
                 self.get_data_without_id()
             )
+
+    def __getattribute__(self, item):
+        field = super().__getattribute__(item)
+        if isinstance(field, Field.ObjectHolder):
+            return field.value
+        return field
+
+    def __setattr__(self, key, value):
+        field = None
+        if hasattr(self, key):
+            field = super().__getattribute__(key)
+        if isinstance(field, Field.ObjectHolder):
+            field.value = value
+        else:
+            super().__setattr__(key, value)
 
     @classmethod
     def get_table_name(cls) -> str:
@@ -95,7 +110,7 @@ class DBModel:
 
     @classmethod
     def load_objects(cls, db_name):
-        cls.db_name.value = db_name
+        cls.db_name = db_name
         for vals in get(db_name, cls.get_table_name(), [f.name for f in cls.fields]):
             cls(**{field.name: val for field, val in zip(cls.fields, vals)})
 

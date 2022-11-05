@@ -22,13 +22,13 @@ def delete_dbs():
 
 
 def test_teacher():
-
     Teacher.new(name='toge')
     lesson = Lesson(id=1, name="LolKek", teacher=1)
     print(lesson.teacher.name)
     print(CREATE_DB_TABLE % (Lesson.get_table_name(), lesson.to_sql()))
     print(lesson.get_data())
-    print(INSERT % (lesson.get_table_name(), ', '.join(map(lambda x: x.name, lesson.fields)), ', '.join(lesson.get_data())))
+    print(INSERT % (
+    lesson.get_table_name(), ', '.join(map(lambda x: x.name, lesson.fields)), ', '.join(lesson.get_data())))
 
 
 def test_image():
@@ -43,13 +43,20 @@ def start():
     sys.exit(app.exec())
 
 
-if __name__ == '__main__':
+def db_test2():
     Teacher.load_objects(MAIN_DB_NAME)
     Lesson.load_objects(MAIN_DB_NAME)
-    # lesson = Lesson.new(name='les1', teacher=1)
-    # print(lesson.get_data())
-    # print(lesson.get_data_without_id())
-    lesson = Lesson.objects[1]
-    lesson.name.value = 'les2'
+    lesson = Lesson.new(name='les1', teacher=1)
     print(lesson.get_data())
+    print(lesson.get_data_without_id())
+    lesson = Lesson.objects[1]
+    lesson.teacher.value.name.value = 'teach3'
+    print(lesson.get_data())
+    lesson.teacher.value.save()
     lesson.save()
+
+
+if __name__ == '__main__':
+    # start()
+    teacher = Teacher(id=1, name='lol')
+    print(type(teacher.db_name))
