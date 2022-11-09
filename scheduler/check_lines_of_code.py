@@ -7,7 +7,7 @@ without_spaces = 0
 while ways:
     filename = ways.pop()
     if os.path.isfile(filename) and filename.endswith('.py') and not filename.endswith('check_lines_of_code.py'):
-        with open(filename, 'r') as r:
+        with open(filename, 'r', encoding='utf-8') as r:
             for line in r.readlines():
                 comment_now = False
                 l = line.strip()

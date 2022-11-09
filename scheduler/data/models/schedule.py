@@ -15,7 +15,7 @@ class Day(DBModel):
 
 
 class Week(DBModel):
-    days_ids = ListField('days', Day, list_item_type=ForeignField)
+    days = ListField('days', Day, list_item_type=ForeignField)
     group = ForeignField('group_id', Group)
 
 
@@ -28,11 +28,21 @@ class Schedule:
             Schedule.is_main_data_loaded = True
         if not db_exists(name):
             create_db_with_models(name, Day, Week)
-        # Day.objects.clear()
-        # Week.objects.clear()
+        Day.objects.clear()
+        Week.objects.clear()
         Day.load_objects(name)
         Week.load_objects(name)
 
     @staticmethod
     def get_all_schedules():
-        return list(i for i in get_dbs() if i != MAIN_DB_NAME)
+        return [i for i in get_dbs() if i != MAIN_DB_NAME]
+
+    def get_week(self, group):
+        for week in Week.objects.values():
+            if week.group.id == group.id:
+                return week
+        # Not found a week
+        days = []
+        for i in range(1, 8):
+            days.append(Day.new(lessons=[], group=group))
+        return Week.new(days=days, group=group)

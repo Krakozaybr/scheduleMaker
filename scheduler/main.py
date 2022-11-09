@@ -1,11 +1,12 @@
 import sys
+from pprint import pprint
 
 from PyQt5.QtWidgets import QApplication
 
 from scheduler.config import MAIN_DB_NAME
-from scheduler.data.database_interaction.db_utils import create_db_with_models, delete_db
+from scheduler.data.database_interaction.db_utils import create_db_with_models, delete_db, db_exists
 from scheduler.data.database_interaction.sql_commands import CREATE_DB_TABLE, INSERT
-from scheduler.data.models.schedule import Week, Day
+from scheduler.data.models.schedule import Week, Day, Schedule
 from scheduler.data.models.structure import Teacher, Group, Lesson, Classroom
 from scheduler.data.process_image import process_image
 from view.main_window import MainWindow
@@ -22,7 +23,7 @@ def delete_dbs():
 
 
 def test_teacher():
-    Teacher.new(name='toge')
+    Teacher.new(name='toge', image='default.png')
     lesson = Lesson(id=1, name="LolKek", teacher=1)
     print(lesson.teacher.name)
     print(CREATE_DB_TABLE % (Lesson.get_table_name(), lesson.to_sql()))
@@ -37,6 +38,9 @@ def test_image():
 
 
 def start():
+    if not db_exists(MAIN_DB_NAME):
+        create_db_with_models(MAIN_DB_NAME, Teacher, Group, Lesson, Classroom)
+    schedule = Schedule('example')
     app = QApplication(sys.argv)
     ex = MainWindow()
     ex.show()
@@ -57,5 +61,5 @@ def db_test2():
 
 
 if __name__ == '__main__':
-    # start()
-    test_teacher()
+    start()
+    # test_teacher()

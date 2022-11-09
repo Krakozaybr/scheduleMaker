@@ -15,7 +15,13 @@ def staticinit(method):
 
 
 class DBModel:
-    id = IntegerField('id', primary_key=True, autoincrement=True)
+    id = IntegerField(
+        'id',
+        primary_key=True,
+        autoincrement=True,
+        read_only=True,
+        russian_name='Идентификатор'
+    )
     _fields: list[Field]
 
     def __init__(self, **kwargs):
@@ -82,7 +88,7 @@ class DBModel:
 
     @classmethod
     def to_sql(cls):
-        return '\n\t' + ',\n\t'.join(map(str, [DBModel.id] + cls.fields)) + '\n'
+        return '\n\t' + ',\n\t'.join(map(str, cls.fields)) + '\n'
 
     @classmethod
     @staticinit

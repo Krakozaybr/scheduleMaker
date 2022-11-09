@@ -134,6 +134,8 @@ dmypy.json
 # Images
 scheduler/data/store/images
 !scheduler/data/store/images/default.png
+!scheduler/data/store/images/delete.png
+!scheduler/data/store/images/edit.png
 
 # IDE
 .idea

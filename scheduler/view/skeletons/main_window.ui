@@ -96,7 +96,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QPushButton" name="exportBtn">
+  <widget class="QPushButton" name="makeScheduleBtn">
    <property name="geometry">
     <rect>
      <x>40</x>
