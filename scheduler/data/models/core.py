@@ -1,5 +1,5 @@
 from .fields import Field, IntegerField
-from ..database_interaction.orm import get, insert, update_by_id
+from ..database_interaction.orm import get, insert, update_by_id, delete_by_id
 
 
 def staticinit(method):
@@ -67,6 +67,10 @@ class DBModel:
                 self.get_data_without_id()
             )
 
+    def delete(self):
+        delete_by_id(self.db_name, self.get_table_name(), self.id)
+        del self.objects[self.id]
+
     def __getattribute__(self, item):
         field = super().__getattribute__(item)
         if isinstance(field, Field.ObjectHolder):
@@ -98,6 +102,13 @@ class DBModel:
             for i in dir(cls)
             if i != 'fields' and isinstance(getattr(cls, i), Field)
         ]
+
+    @classmethod
+    @staticinit
+    def plural_class_name(cls):
+        if hasattr(cls, '_plural_class_name'):
+            return getattr(cls, '_plural_class_name')
+        return cls.__name__ + 's'
 
     @classmethod
     @staticinit

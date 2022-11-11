@@ -7,22 +7,46 @@ from PyQt5.QtWidgets import QMainWindow, QScrollArea, QVBoxLayout, QHBoxLayout, 
     QDialogButtonBox, QFormLayout, QAbstractButton, QButtonGroup, QRadioButton, QCheckBox
 
 from scheduler.config import IMAGES_DIR
-from .skeletons.schedule_window import Ui_Form
+from .skeletons.schedule_window import Ui_Dialog
 from scheduler.data.models.structure import Group
+
+
+class ScheduleHolder(QWidget):
+    def __init__(self, parent, name):
+        super().__init__(parent)
+        self.name = name
+
+        layout = QHBoxLayout()
+        name_label = QLabel(name)
+        rename_btn = QPushButton()
+
+    def create(self):
+        ...
+
+    def rename(self):
+        ...
+
+    def delete(self):
+        ...
 
 
 class ScheduleSelectDialog(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        ...
+        self.setWindowTitle('Выбрать расписание')
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
 
 
-class ScheduleWindow(Ui_Form, QMainWindow):
-    def __init__(self):
-        super().__init__()
+class ScheduleEditDialog(Ui_Dialog, QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
         self.setupUi(self)
         self.setFixedSize(self.size())
-        QScrollArea(self).setWidget(self.scheduleSpace)
+        QScrollArea().setWidget(self.scheduleSpace)
+        self.layout().setAlignment(Qt.AlignTop)
 
         self.selected_schedule = None
         for group in Group.objects.values():

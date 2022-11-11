@@ -7,100 +7,17 @@
     <x>0</x>
     <y>0</y>
     <width>580</width>
-    <height>333</height>
+    <height>89</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Редактор расписания</string>
   </property>
-  <widget class="QWidget" name="verticalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>60</y>
-     <width>501</width>
-     <height>121</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <widget class="QLabel" name="label">
-      <property name="font">
-       <font>
-        <pointsize>16</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Базы данных</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QPushButton" name="teachersBtn">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Учителя</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="classroomsBtn">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Кабинеты</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QPushButton" name="groupsBtn">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Классы</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="lessonsBtn">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Уроки</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
   <widget class="QPushButton" name="makeScheduleBtn">
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>210</y>
+     <y>50</y>
      <width>499</width>
      <height>27</height>
     </rect>
@@ -112,6 +29,24 @@
    </property>
    <property name="text">
     <string>Составить расписание</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="editBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>20</y>
+     <width>499</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Редактировать базы данных</string>
    </property>
   </widget>
  </widget>

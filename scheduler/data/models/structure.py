@@ -14,18 +14,20 @@ class NamedModel(DBModel):
 
 
 class Group(NamedModel):
-    pass
+    _plural_class_name = 'Классы'
 
 
 class Teacher(NamedModel):
-    image = ImageField('image', default="'default.png'", russian_name='Изображение')
+    _plural_class_name = 'Учителя'
+    image = ImageField('image', default=f"'{config.DEFAULT_TEACHER_IMG}'", russian_name='Изображение')
 
 
 class Classroom(NamedModel):
-    pass
+    _plural_class_name = 'Кабинеты'
 
 
 class Lesson(NamedModel):
+    _plural_class_name = 'Уроки'
     teacher = ForeignField('teacher', Teacher, russian_name='Учитель')
 
     def are_same(self, another):

@@ -2,10 +2,11 @@ import json
 import os.path
 import shutil
 from typing import Iterable
-from scheduler.config import IMAGES_DIR
-from scheduler.view.help_windows.core import PicButton, ImageDialog, InfoModelDialog, SelectOneModelListDialog
+import scheduler.config as config
+from scheduler.view.help_windows.core import PicButton, ImageDialog, InfoModelDialog, SelectOneModelListDialog, \
+    ErrorDialog
 from PyQt5.QtCore import QRegExp
-from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit, QVBoxLayout, QPushButton, QFileDialog
+from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit, QVBoxLayout, QPushButton, QFileDialog, QErrorMessage
 
 
 class Field:
@@ -22,6 +23,7 @@ class Field:
         self.field_type = field_type
         self.read_only = read_only
         self.russian_name = russian_name
+        self.default = default
         if not russian_name:
             self.russian_name = name
         if primary_key:
@@ -41,11 +43,14 @@ class Field:
         kwargs['parent'] = self
         return self.__class__.ObjectHolder(*args, **kwargs)
 
-    def get_widget_for_edit(self, context, value):
+    def get_widget_for_change(self, context, value):
         return QLabel(str(value), context), lambda: None
 
     def get_widget_for_info(self, context, value):
         return QLabel(str(value), context)
+
+    def check_val(self, val):
+        return bool(val)
 
     class ObjectHolder:
         def __init__(self, obj, parent=None):
@@ -74,12 +79,15 @@ class IntegerField(Field):
     def __init__(self, name, **kwargs):
         super().__init__(name, 'INTEGER', **kwargs)
 
-    def get_widget_for_edit(self, context, value):
+    def get_widget_for_change(self, context, value):
         if not self.read_only:
-            widget = QLineEdit(str(value), context)
+            widget = QLineEdit('0' if value is None else str(value), context)
             widget.setValidator(QRegExp("[0-9]{30}"))
             return widget, widget.text
-        return super().get_widget_for_edit(context, value)
+        return super().get_widget_for_change(context, value)
+
+    def check_val(self, val):
+        return isinstance(val, int)
 
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, val, parent):
@@ -95,11 +103,14 @@ class StringField(Field):
     def __init__(self, name, **kwargs):
         super().__init__(name, 'TEXT', **kwargs)
 
-    def get_widget_for_edit(self, context, value):
+    def get_widget_for_change(self, context, value):
         if not self.read_only:
-            edit = QTextEdit(str(value), context)
+            edit = QTextEdit('' if value is None else str(value), context)
             return edit, edit.toPlainText
-        return super().get_widget_for_edit(context, value)
+        return super().get_widget_for_change(context, value)
+
+    def check_val(self, val):
+        return isinstance(val, str)
 
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, val, parent):
@@ -112,15 +123,12 @@ class ImageField(StringField):
 
     image_size = 300
 
-    def get_widget_for_edit(self, context, value):
+    def get_widget_for_change(self, context, value):
         if not self.read_only:
             container = QVBoxLayout(context)
-            img = PicButton(context, value)
+            img = PicButton(context, value or self.default or config.DEFAULT_TEACHER_IMG)
             img.clicked.connect(lambda: self.show_img(context, label.text()))
-            w, h = img.pixmap.width(), img.pixmap.height()
-            k = max(w, h) / ImageField.image_size
-            w, h = int(w / k), int(h / k)
-            img.setFixedSize(w, h)
+            img.set_max_dimension(self.image_size)
             label = QLabel(value, context)
 
             load_btn = QPushButton('Загрузить', context)
@@ -130,12 +138,13 @@ class ImageField(StringField):
             container.addWidget(img)
             container.addWidget(load_btn)
             return container, label.text
-        return super().get_widget_for_edit(context, value)
+        return super().get_widget_for_change(context, value)
 
     def get_widget_for_info(self, context, value):
         container = QVBoxLayout(context)
         img = PicButton(context, value)
         img.clicked.connect(lambda: self.show_img(context, label.text()))
+        img.set_max_dimension(self.image_size)
         label = QLabel(value, context)
         container.addWidget(label)
         container.addWidget(img)
@@ -146,15 +155,19 @@ class ImageField(StringField):
         way = QFileDialog.getOpenFileName(
             context, 'Выбрать файл', '', 'Файл (*.jpg);;Файл (*.png);;Файл (*.jpeg)'
         )[0]
-        name = os.path.basename(way)
-        dest = os.path.join(IMAGES_DIR, name)
-        shutil.copyfile(way, dest)
-        label.setText(name)
-        img.set_image(name)
+        if way:
+            name = os.path.basename(way)
+            dest = os.path.join(config.IMAGES_DIR, name)
+            shutil.copyfile(way, dest)
+            label.setText(name)
+            img.set_image(name)
 
     @staticmethod
     def show_img(context, name):
         ImageDialog.from_image_name(context, name).exec()
+
+    def check_val(self, val):
+        return isinstance(val, str)
 
 
 class ForeignField(Field):
@@ -163,7 +176,7 @@ class ForeignField(Field):
         self.manager = foreign_cls.objects
         self.foreign_cls = foreign_cls
 
-    def get_widget_for_edit(self, context, value):
+    def get_widget_for_change(self, context, value):
         if not self.read_only:
             layout = QVBoxLayout(context)
             label = QLabel(str(value), context)
@@ -179,15 +192,20 @@ class ForeignField(Field):
             info_btn.clicked.connect(lambda: self.show_info(context, holder))
             edit_btn.clicked.connect(lambda: self.edit_model(context, label, holder))
             return layout, lambda: holder.value
-        return super().get_widget_for_edit(context, value)
+        return super().get_widget_for_change(context, value)
+
+    def check_val(self, val):
+        return isinstance(val, self.foreign_cls)
 
     @staticmethod
     def show_info(context, holder):
-        InfoModelDialog(context, holder.value).exec()
+        if holder.value is None:
+            ErrorDialog(context, 'Значение неопределено').exec()
+        else:
+            InfoModelDialog(context, holder.value).exec()
 
-    @staticmethod
-    def edit_model(context, label, holder):
-        dialog = SelectOneModelListDialog(context, holder.value.__class__.objects)
+    def edit_model(self, context, label, holder):
+        dialog = SelectOneModelListDialog(context, self.foreign_cls.objects)
         dialog.exec()
         selected = dialog.get_selected()
         if selected:
@@ -212,14 +230,17 @@ class ListField(Field):
         self.foreign_cls = foreign_cls
         self.list_item_type = list_item_type
 
-    def get_widget_for_edit(self, context, value):
+    def get_widget_for_change(self, context, value):
         # It`s unused, so I decided to pass it
         if not self.read_only:
             ...
-        return super().get_widget_for_edit(context, value)
+        return super().get_widget_for_change(context, value)
 
     def get_widget_for_info(self, context, value):
         return QLabel(value, context)
+
+    def check_val(self, val):
+        return isinstance(val, Iterable) and all(isinstance(i, self.foreign_cls) for i in val)
 
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, holders, parent):
