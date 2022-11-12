@@ -47,6 +47,7 @@ class DBModel:
         kwargs['id'] = cls.max_id.value + 1
         result = cls(**kwargs)
         result.created = True
+        result.save()
         return result
 
     def save(self):

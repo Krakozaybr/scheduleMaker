@@ -1,76 +1,9 @@
-import os.path
-
-from PIL.ImageQt import QImage
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPixmap
-from PyQt5.QtWidgets import QMainWindow, QScrollArea, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton, QDialog, \
-    QDialogButtonBox, QFormLayout, QAbstractButton, QButtonGroup, QRadioButton, QCheckBox, QFrame, QSizePolicy, \
-    QBoxLayout, QInputDialog, QComboBox
+from PyQt5.QtWidgets import QScrollArea, QHBoxLayout, QWidget, QPushButton, QFormLayout, QButtonGroup, QRadioButton, \
+    QCheckBox, QComboBox
+
 import scheduler.config as config
-from scheduler.config import IMAGES_DIR
-
-
-def modelize(obj, model):
-    obj.model = model
-    return obj
-
-
-def put_in_layout(item, layout):
-    if isinstance(item, QBoxLayout):
-        layout.addItem(item)
-    else:
-        layout.addWidget(item)
-
-
-class ImageDialog(QDialog):
-    def __init__(self, parent, pixmap):
-        super().__init__(parent)
-        self.setWindowTitle('Изображение')
-        QBtn = QDialogButtonBox.Ok
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        layout = QVBoxLayout(self)
-        label = QLabel(self)
-        label.setPixmap(pixmap)
-        layout.addWidget(label)
-        layout.addWidget(self.buttonBox)
-        self.setLayout(layout)
-
-    @staticmethod
-    def from_image_name(parent, name):
-        image = QImage(os.path.join(IMAGES_DIR, name))
-        return ImageDialog(parent, QPixmap.fromImage(image))
-
-
-class PicButton(QAbstractButton):
-    def __init__(self, parent, image_name):
-        super(PicButton, self).__init__(parent)
-        self.parent_view = parent
-        self.set_image(image_name)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        r = event.rect()
-        # PicButton could be painted with bugs, if we do not override w, h, x and y of rect
-        r.setX(0)
-        r.setY(0)
-        r.setWidth(self.width())
-        r.setHeight(self.height())
-        painter.drawPixmap(r, self.pixmap)
-
-    def set_max_dimension(self, value):
-        w, h = self.pixmap.width(), self.pixmap.height()
-        k = max(w, h) / value
-        w, h = int(w / k), int(h / k)
-        self.setFixedSize(w, h)
-
-    def sizeHint(self):
-        return self.pixmap.size()
-
-    def set_image(self, image_name):
-        image = QImage(os.path.join(IMAGES_DIR, image_name))
-        self.pixmap = QPixmap.fromImage(image)
-        self.repaint()
+from .core import *
 
 
 class EditModelDialog(QDialog):
@@ -128,7 +61,7 @@ class CreateModelDialog(QDialog):
                 continue
             widget, func = field.get_widget_for_change(self, None)
             self.get_value_funcs[field.name] = func
-            self.container.addRow(field.russian_name, widget)
+            self.container.addRow(field.russian_name + ':', widget)
 
         self.container.addWidget(self.buttonBox)
         self.setLayout(self.container)
@@ -152,8 +85,10 @@ class CreateModelDialog(QDialog):
 class InfoModelDialog(QDialog):
     def __init__(self, parent, model):
         super().__init__(parent)
+        self.model = model
 
         self.setWindowTitle('Информация о ' + str(model))
+
         QBtn = QDialogButtonBox.Ok
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -166,68 +101,8 @@ class InfoModelDialog(QDialog):
             self.container.addRow(field.russian_name, widget)
         self.container.addWidget(self.buttonBox)
         self.setLayout(self.container)
-
-
-class MessageDialog(QDialog):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setWindowTitle('Сообщение')
-        layout = QVBoxLayout()
-
-        content = self.get_content()
-        if content:
-            put_in_layout(content, layout)
-
-        button_box = self.get_button_box()
-        if button_box:
-            layout.addWidget(button_box)
-
-        self.setLayout(layout)
         self.adjustSize()
         self.setFixedSize(self.size())
-
-    def get_content(self):
-        return None
-
-    def get_button_box(self):
-        return None
-
-
-class ErrorDialog(MessageDialog):
-    def __init__(self, parent, text):
-        self.text = text
-        super().__init__(parent)
-        self.setWindowTitle('Ошибка')
-
-    def get_content(self):
-        return QLabel(self.text)
-
-    def get_button_box(self):
-        QBtn = QDialogButtonBox.Ok
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        return self.buttonBox
-
-
-class ConfirmDialog(MessageDialog):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setWindowTitle('Подтвердить действие')
-        self.confirmed = False
-
-    def accept(self):
-        self.confirmed = True
-        super().accept()
-
-    def get_content(self):
-        return QLabel('Вы уверены?')
-
-    def get_button_box(self):
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        return self.buttonBox
 
 
 class ModelHolder(QWidget):
@@ -308,13 +183,14 @@ class CheckboxModelHolder(ChoosableModelHolder):
     choose_class = QCheckBox
 
 
-class ModelListDialog(QDialog):
+class ItemListDialog(QDialog):
     def __init__(self, parent, objects, name):
         super().__init__(parent)
 
         self.scroll = QScrollArea()
         self.scroll_widget = QWidget()
         self.objects_layout = QVBoxLayout()
+        self.objects_layout.setAlignment(Qt.AlignTop)
         self.scroll_widget.setLayout(self.objects_layout)
         self.scroll.setWidget(self.scroll_widget)
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -330,11 +206,11 @@ class ModelListDialog(QDialog):
 
     def setupUI(self):
         self.setWindowTitle(self.name)
+        self.buttonBox = self.get_button_box()
         self.update_objects()
         self.setFixedSize(410, 400)
 
         container = QVBoxLayout()
-        btns = self.get_button_box()
 
         for item in self.get_header_widgets():
             put_in_layout(item, container)
@@ -342,20 +218,29 @@ class ModelListDialog(QDialog):
         container.setAlignment(Qt.AlignTop)
         container.addWidget(self.scroll)
 
-        if btns:
-            container.addWidget(btns)
+        if self.buttonBox:
+            container.addWidget(self.buttonBox)
         self.setLayout(container)
 
     def update_objects(self):
         self.scroll.setParent(None)
+        if self.buttonBox:
+            self.buttonBox.setParent(None)
         for i in reversed(range(self.objects_layout.count())):
             self.objects_layout.itemAt(i).widget().setParent(None)
-        for obj in sorted(self.objects.values(), key=lambda x: x.id):
-            put_in_layout(self.get_row(obj), self.objects_layout)  # addWidget просто
+
+        objects = self.objects
+        if isinstance(objects, dict) and all(hasattr(i, 'id') for i in self.objects.values()):
+            objects = sorted(self.objects.values(), key=lambda x: x.id)
+
+        for obj in objects:
+            put_in_layout(self.get_row(obj), self.objects_layout)
+
         self.scroll_widget.adjustSize()
-        print(self.objects_layout.count())
         if self.layout():
             self.layout().addWidget(self.scroll)
+            if self.buttonBox:
+                self.layout().addWidget(self.buttonBox)
 
     def get_header_widgets(self):
         return []
@@ -370,7 +255,7 @@ class ModelListDialog(QDialog):
         return QLabel(str(obj), self)
 
 
-class EditListDialog(ModelListDialog):
+class EditListDialog(ItemListDialog):
     def __init__(self, parent, classes):
         super().__init__(parent, classes[0].objects, 'Редактировать базы данных')
 
@@ -405,6 +290,7 @@ class EditListDialog(ModelListDialog):
 
     def create_model(self):
         CreateModelDialog(self.parent(), self.current_cls).exec()
+        self.update_objects()
 
     def update_model_info(self, model):
         self.holders[model.id].update_text()
@@ -420,7 +306,7 @@ class EditListDialog(ModelListDialog):
         return None
 
 
-class InfoModelListDialog(ModelListDialog):
+class InfoItemListDialog(ItemListDialog):
     def __init__(self, parent, objects, name='Список объектов'):
         super().__init__(parent, objects, name)
 
@@ -429,7 +315,7 @@ class InfoModelListDialog(ModelListDialog):
         return self.holders[obj.id]
 
 
-class SelectOneModelListDialog(InfoModelListDialog):
+class SelectOneItemListDialog(InfoItemListDialog):
     def __init__(self, parent, objects, name='Выбрать элемент'):
         super().__init__(parent, objects, name)
         self.btn_group = QButtonGroup()
@@ -457,7 +343,7 @@ class SelectOneModelListDialog(InfoModelListDialog):
         return self.selected
 
 
-class SelectManyModelListDialog(SelectOneModelListDialog):
+class SelectManyItemListDialog(SelectOneItemListDialog):
     def __init__(self, parent, objects, name='Выбрать элементы'):
         super().__init__(parent, objects, name)
         self.selected = []

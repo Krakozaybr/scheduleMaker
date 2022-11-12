@@ -1,12 +1,17 @@
 import json
 import os.path
 import shutil
+import string
+import random
 from typing import Iterable
-import scheduler.config as config
-from scheduler.view.help_windows.core import PicButton, ImageDialog, InfoModelDialog, SelectOneModelListDialog, \
-    ErrorDialog
+
 from PyQt5.QtCore import QRegExp
-from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit, QVBoxLayout, QPushButton, QFileDialog, QErrorMessage
+from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit, QVBoxLayout, QPushButton, QFileDialog, QTextBrowser
+
+import scheduler.config as config
+from scheduler.view.core import PicButton, ImageDialog, \
+    ErrorDialog
+from scheduler.view.structure_interaction import InfoModelDialog, SelectOneItemListDialog
 
 
 class Field:
@@ -112,6 +117,13 @@ class StringField(Field):
     def check_val(self, val):
         return isinstance(val, str)
 
+    def get_widget_for_info(self, context, value):
+        textBrowser = QTextBrowser(context)
+        textBrowser.setText(str(value))
+        textBrowser.setFixedWidth(200)
+        textBrowser.adjustSize()
+        return textBrowser
+
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, val, parent):
             if not isinstance(val, str):
@@ -119,47 +131,51 @@ class StringField(Field):
             super().__init__(val, parent)
 
 
-class ImageField(StringField):
+def generate_random_string(n=16):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=n))
 
+
+class ImageField(StringField):
     image_size = 300
 
     def get_widget_for_change(self, context, value):
         if not self.read_only:
             container = QVBoxLayout(context)
+
+            image_name = Field.ObjectHolder(value)
+
             img = PicButton(context, value or self.default or config.DEFAULT_TEACHER_IMG)
-            img.clicked.connect(lambda: self.show_img(context, label.text()))
+            img.clicked.connect(lambda: self.show_img(context, image_name.value))
             img.set_max_dimension(self.image_size)
-            label = QLabel(value, context)
 
             load_btn = QPushButton('Загрузить', context)
-            load_btn.clicked.connect(lambda: self.load_img(context, label, img))
+            load_btn.clicked.connect(lambda: self.load_img(context, image_name, img))
 
-            container.addWidget(label)
             container.addWidget(img)
             container.addWidget(load_btn)
-            return container, label.text
+            return container, lambda: image_name.value
         return super().get_widget_for_change(context, value)
 
     def get_widget_for_info(self, context, value):
         container = QVBoxLayout(context)
         img = PicButton(context, value)
-        img.clicked.connect(lambda: self.show_img(context, label.text()))
+        img.clicked.connect(lambda: self.show_img(context, value))
         img.set_max_dimension(self.image_size)
-        label = QLabel(value, context)
-        container.addWidget(label)
         container.addWidget(img)
         return container
 
     @staticmethod
-    def load_img(context, label, img):
+    def load_img(context, holder, img):
         way = QFileDialog.getOpenFileName(
             context, 'Выбрать файл', '', 'Файл (*.jpg);;Файл (*.png);;Файл (*.jpeg)'
         )[0]
         if way:
-            name = os.path.basename(way)
-            dest = os.path.join(config.IMAGES_DIR, name)
+            name = generate_random_string()
+            while os.path.exists(os.path.join(config.IMAGES_DIR, name)):
+                name = generate_random_string()
+            dest = os.path.join(config.IMAGES_DIR, name) + '.' + os.path.basename(way).split('.')[-1]
             shutil.copyfile(way, dest)
-            label.setText(name)
+            holder.value = name
             img.set_image(name)
 
     @staticmethod
@@ -194,6 +210,16 @@ class ForeignField(Field):
             return layout, lambda: holder.value
         return super().get_widget_for_change(context, value)
 
+    def get_widget_for_info(self, context, value):
+        container = QVBoxLayout()
+        more_btn = QPushButton('Подробнее')
+        more_btn.clicked.connect(lambda: self.show_info(context, Field.ObjectHolder(value)))
+
+        container.addWidget(QLabel(str(value), context))
+        container.addWidget(more_btn)
+
+        return container
+
     def check_val(self, val):
         return isinstance(val, self.foreign_cls)
 
@@ -205,7 +231,7 @@ class ForeignField(Field):
             InfoModelDialog(context, holder.value).exec()
 
     def edit_model(self, context, label, holder):
-        dialog = SelectOneModelListDialog(context, self.foreign_cls.objects)
+        dialog = SelectOneItemListDialog(context, self.foreign_cls.objects)
         dialog.exec()
         selected = dialog.get_selected()
         if selected:

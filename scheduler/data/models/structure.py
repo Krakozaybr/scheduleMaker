@@ -1,6 +1,6 @@
 from .core import DBModel
-import scheduler.config as config
 from .fields import *
+from scheduler.util import make_string_short
 
 
 class NamedModel(DBModel):
@@ -8,9 +8,7 @@ class NamedModel(DBModel):
     length = 20
 
     def __str__(self):
-        if len(self.name) > self.length:
-            return self.name[:self.length - 3] + '...'
-        return self.name[:self.length]
+        return make_string_short(self.name, self.length)
 
 
 class Group(NamedModel):

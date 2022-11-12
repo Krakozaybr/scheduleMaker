@@ -1,8 +1,9 @@
 from .structure import Lesson, structure_load, Group
 from .core import DBModel
 from scheduler.config import MAIN_DB_NAME
-from ..database_interaction.db_utils import get_dbs, db_exists, create_db_with_models
+from ..database_interaction.db_utils import get_dbs, db_exists, create_db_with_models, delete_db
 from .fields import *
+from pathvalidate import is_valid_filename
 
 
 class Day(DBModel):
@@ -36,6 +37,27 @@ class Schedule:
     @staticmethod
     def get_all_schedules():
         return [i for i in get_dbs() if i != MAIN_DB_NAME]
+
+    @staticmethod
+    def rename(old_name, new_name):
+        if db_exists(new_name) or not is_valid_filename(new_name):
+            return False
+        os.rename(
+            os.path.join(config.STORE_DIR, old_name) + '.sqlite',
+            os.path.join(config.STORE_DIR, new_name) + '.sqlite'
+        )
+        return True
+
+    @staticmethod
+    def delete(name):
+        delete_db(name)
+
+    @staticmethod
+    def create(name):
+        if not is_valid_filename(name) or db_exists(name):
+            return False
+        create_db_with_models(name, Day, Week)
+        return True
 
     def get_week(self, group):
         for week in Week.objects.values():

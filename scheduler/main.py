@@ -7,7 +7,7 @@ from scheduler.config import MAIN_DB_NAME
 from scheduler.data.database_interaction.db_utils import create_db_with_models, delete_db, db_exists
 from scheduler.data.database_interaction.sql_commands import CREATE_DB_TABLE, INSERT
 from scheduler.data.models.schedule import Week, Day, Schedule
-from scheduler.data.models.structure import Teacher, Group, Lesson, Classroom
+from scheduler.data.models.structure import Teacher, Group, Lesson, Classroom, structure_load
 from scheduler.data.process_image import process_image
 from view.main_window import MainWindow
 
@@ -38,9 +38,7 @@ def test_image():
 
 
 def start():
-    if not db_exists(MAIN_DB_NAME):
-        create_db_with_models(MAIN_DB_NAME, Teacher, Group, Lesson, Classroom)
-    schedule = Schedule('example')
+    structure_load()
     app = QApplication(sys.argv)
     ex = MainWindow()
     ex.show()
