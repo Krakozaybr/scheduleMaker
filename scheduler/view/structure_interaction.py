@@ -231,7 +231,7 @@ class ItemListDialog(QDialog):
 
         objects = self.objects
         if isinstance(objects, dict) and all(hasattr(i, 'id') for i in self.objects.values()):
-            objects = sorted(self.objects.values(), key=lambda x: x.id)
+            objects = sorted(filter(lambda x: x.id > 0, self.objects.values()), key=lambda x: x.id)
 
         for obj in objects:
             put_in_layout(self.get_row(obj), self.objects_layout)

@@ -1,18 +1,13 @@
-import os.path
-
-from PIL.ImageQt import QImage
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPixmap
-from PyQt5.QtWidgets import QMainWindow, QScrollArea, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton, QDialog, \
-    QDialogButtonBox, QFormLayout, QAbstractButton, QButtonGroup, QRadioButton, QCheckBox, QInputDialog
+from PyQt5.QtWidgets import QScrollArea, QHBoxLayout, QWidget, QPushButton, QButtonGroup, QRadioButton, QInputDialog
 
 import scheduler.config as config
+from scheduler.data.models.schedule import Schedule
+from scheduler.data.models.structure import Group, Lesson, Classroom
 from scheduler.util import make_string_short
 from .core import *
 from .skeletons.schedule_window import Ui_Dialog
-from scheduler.data.models.structure import Group
-from scheduler.data.models.schedule import Schedule
-from .structure_interaction import ItemListDialog
+from .structure_interaction import ItemListDialog, SelectOneItemListDialog
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class ScheduleHolder(QWidget):
@@ -114,15 +109,145 @@ class ScheduleSelectDialog(ItemListDialog):
         return self.result
 
 
+class DayEventHolder(QWidget):
+    def __init__(self, parent, lesson, classroom, update_parent, index, day):
+        super().__init__(parent)
+        self.lesson = lesson
+        self.classroom = classroom
+        self.update_parent = update_parent
+        self.index = index
+        self.day = day
+
+        layout = QHBoxLayout()
+
+        change_classroom_btn = PicButton(self, config.EDIT_IMG)
+        change_lesson_btn = PicButton(self, config.EDIT_IMG)
+        uplift_btn = PicButton(self, config.UPLIFT_IMG)
+        downlift_btn = PicButton(self, config.DOWNLIFT_IMG)
+        delete_btn = PicButton(self, config.DELETE_IMG)
+
+        change_classroom_btn.clicked.connect(self.change_classroom)
+        change_lesson_btn.clicked.connect(self.change_lesson)
+        uplift_btn.clicked.connect(self.uplift)
+        downlift_btn.clicked.connect(self.downlift)
+        delete_btn.clicked.connect(self.delete_lesson)
+
+        lesson_label = SuperQLabel(str(lesson))
+        lesson_label.setAlignment(Qt.AlignCenter)
+        lesson_label.setFixedHeight(uplift_btn.height())
+        classroom_label = SuperQLabel(str(classroom))
+        classroom_label.setAlignment(Qt.AlignCenter)
+        classroom_label.setFixedHeight(uplift_btn.height())
+
+        layout.addWidget(QLabel(str(self.index + 1)))
+        layout.addWidget(lesson_label)
+        layout.addWidget(change_lesson_btn)
+        layout.addWidget(classroom_label)
+        layout.addWidget(change_classroom_btn)
+        layout.addWidget(uplift_btn)
+        layout.addWidget(downlift_btn)
+        layout.addWidget(delete_btn)
+
+        self.setLayout(layout)
+
+    def change_classroom(self):
+        dialog = SelectOneItemListDialog(self, Classroom.objects)
+        dialog.exec()
+        res = dialog.get_selected()
+        if res:
+            self.day.set_classroom(self.index, res)
+            self.update_parent()
+
+    def change_lesson(self):
+        dialog = SelectOneItemListDialog(self, Lesson.objects)
+        dialog.exec()
+        res = dialog.get_selected()
+        if res:
+            self.day.set_lesson(self.index, res)
+            self.update_parent()
+
+    def uplift(self):
+        if self.day.uplift_at(self.index):
+            self.update_parent()
+        else:
+            ErrorDialog(self, 'Операция невозможна')
+
+    def downlift(self):
+        if self.day.downlift_at(self.index):
+            self.update_parent()
+        else:
+            ErrorDialog(self, 'Операция невозможна')
+
+    def delete_lesson(self):
+        dialog = ConfirmDialog(self)
+        dialog.exec()
+        if dialog.confirmed:
+            self.day.remove_day_item_at(self.index)
+            self.update_parent()
+
+
+class DayHolder(QWidget):
+    def __init__(self, parent, day):
+        super().__init__()
+        self.parent_dialog = parent
+        self.day = day
+        self.add_lesson_btn = QPushButton('Добавить урок')
+
+        layout = QVBoxLayout()
+        self.lessons_layout = QVBoxLayout()
+
+        self.update_day_items()
+
+        layout.addWidget(QLabel(str(day)))
+        layout.addItem(self.lessons_layout)
+        layout.addWidget(self.add_lesson_btn)
+
+        self.add_lesson_btn.clicked.connect(self.add_day_item)
+
+        self.setLayout(layout)
+
+    def update_day_items(self):
+        day_items = zip(self.day.lessons, self.day.classrooms)
+
+        for i in reversed(range(self.lessons_layout.count())):
+            self.lessons_layout.itemAt(i).widget().setParent(None)
+
+        for i, (lesson, classroom) in enumerate(day_items):
+            self.lessons_layout.addWidget(
+                DayEventHolder(
+                    self,
+                    lesson,
+                    classroom,
+                    self.repaint_all,
+                    i,
+                    self.day
+                )
+            )
+        self.parent_dialog.update_layout()
+
+    def repaint_all(self):
+        self.day.save()
+        self.parent_dialog.update_content()
+
+    def add_day_item(self):
+        self.day.add_empty()
+        self.repaint_all()
+
+
 class ScheduleEditDialog(Ui_Dialog, QDialog):
     def __init__(self, parent):
         super().__init__(parent)
+        self.scroll = None
+        self.widget_container = None
+        self.scroll_layout = None
         self.setupUi(self)
         self.setFixedSize(self.size())
-        QScrollArea().setWidget(self.scheduleSpace)
         self.layout().setAlignment(Qt.AlignTop)
 
         self.selected_schedule = None
+        self.selected_group = None
+        self.day_holders = []
+
         for group in Group.objects.values():
             self.groupSelect.addItem(str(group), group)
 
@@ -133,13 +258,48 @@ class ScheduleEditDialog(Ui_Dialog, QDialog):
     def update_content(self):
         if self.selected_schedule and self.groupSelect.currentIndex() > -1:
             group = self.groupSelect.currentData()
+            self.day_holders.clear()
+            self.scheduleSpace.setParent(None)
+
+            self.scheduleSpace = QtWidgets.QWidget(self)
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(self.scheduleSpace.sizePolicy().hasHeightForWidth())
+            self.scheduleSpace.setSizePolicy(sizePolicy)
+            self.scheduleSpace.setObjectName("scheduleSpace")
+            self.verticalLayout.addWidget(self.scheduleSpace)
+
+            self.scroll_layout = QVBoxLayout()
+            widget = QWidget()
+            self.widget_container = QVBoxLayout()
+            self.scroll = QScrollArea()
+            self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.scroll.setFixedHeight(470)
+
+            for day in Schedule.get_week(group).days:
+                day_holder = DayHolder(self, day)
+                self.day_holders.append(day_holder)
+                self.widget_container.addWidget(day_holder)
+            widget.setLayout(self.widget_container)
+            self.scroll.setWidget(widget)
+            self.scroll_layout.addWidget(self.scroll)
+            self.scheduleSpace.setLayout(self.scroll_layout)
+            self.scheduleSpace.repaint()
+
+    def update_layout(self):
+        self.scroll.setParent(None)
+        self.scroll_layout.addWidget(self.scroll)
 
     def select_schedule(self):
         dialog = ScheduleSelectDialog(self)
         dialog.exec()
         if dialog.get_result():
             self.selected_schedule = dialog.get_result()
+            Schedule(self.selected_schedule)
             self.currentScheduleLabel.setText(self.selected_schedule)
+            self.update_content()
 
     def export(self):
-        print(Schedule.get_all_schedules())
+        print(self.groupSelect.currentData())

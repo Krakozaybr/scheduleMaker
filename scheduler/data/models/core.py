@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from .fields import Field, IntegerField
 from ..database_interaction.orm import get, insert, update_by_id, delete_by_id
 
@@ -14,7 +16,17 @@ def staticinit(method):
     return prop
 
 
+class Null:
+    def __init__(self):
+        self.id = -1
+
+    def __str__(self):
+        return 'Пусто'
+
+
 class DBModel:
+    null = Null()
+
     id = IntegerField(
         'id',
         primary_key=True,
@@ -114,7 +126,7 @@ class DBModel:
     @classmethod
     @staticinit
     def objects(cls):
-        return dict()
+        return defaultdict(lambda: Null())
 
     @classmethod
     @staticinit

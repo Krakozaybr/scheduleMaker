@@ -39,6 +39,7 @@ def update_by_ids(db_name: str, table: str, element_id: int,
                 if isinstance(val, int):
                     new_vals.append(f'{key} = {val}')
                 else:
+                    val = val.replace('"', '')
                     new_vals.append(f'{key} = "{val}"')
             command = UPDATE_BY_ID % (table, ', '.join(new_vals), element_id)
             cur.execute(command)
@@ -76,6 +77,7 @@ def insert_many(db_name: str, table: str, fields: tuple[str], values_sets: tuple
                 if isinstance(val, int):
                     new_vals.append(str(val))
                 else:
+                    val = val.replace('"', '')
                     new_vals.append(f'"{val}"')
             command = INSERT % (table, ', '.join(fields), ', '.join(new_vals))
             cur.execute(command)

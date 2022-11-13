@@ -127,3 +127,23 @@ class ConfirmDialog(MessageDialog):
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
         return self.buttonBox
+
+
+class SuperQLabel(QLabel):
+    def __init__(self, *args, **kwargs):
+        super(SuperQLabel, self).__init__(*args, **kwargs)
+
+        self.textalignment = Qt.AlignLeft | Qt.TextWrapAnywhere
+        self.isTextLabel = True
+        self.align = None
+
+    def paintEvent(self, event):
+
+        opt = QStyleOption()
+        opt.initFrom(self)
+        painter = QPainter(self)
+
+        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
+
+        self.style().drawItemText(painter, self.rect(),
+                                  self.textalignment, self.palette(), True, self.text())

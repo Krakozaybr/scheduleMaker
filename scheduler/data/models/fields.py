@@ -272,11 +272,13 @@ class ListField(Field):
         def __init__(self, holders, parent):
             if not isinstance(holders, Iterable):
                 raise TypeError('Value "holders" must be iterable')
-
             if isinstance(holders, str):
-                holders = [parent.list_item_type(parent.manager.get(i) for i in json.loads(holders))]
+                holders = [parent.list_item_type.ObjectHolder(parent.manager[i], self) for i in json.loads(holders)]
             elif all(isinstance(i, int) for i in holders):
-                holders = [parent.list_item_type(parent.manager.get(i)) for i in holders]
+                holders = [parent.list_item_type.ObjectHolder(parent.manager[i], self) for i in holders]
+
+            elif all(isinstance(i, parent.foreign_cls) or (hasattr(i, 'id') and i.id == -1) for i in holders):
+                holders = [parent.list_item_type.ObjectHolder(i, self) for i in holders]
             elif any(not isinstance(i, parent.foreign_cls) for i in holders):
                 raise TypeError(f'Holders are neither list of str, int or {parent.foreign_cls.__name__}')
 
@@ -286,4 +288,4 @@ class ListField(Field):
             super().__init__(holders, parent)
 
         def to_sql(self):
-            return f'"{json.dumps([i.to_sql() for i in self.holders])}"'
+            return f'"{json.dumps([i.to_sql() for i in self.value])}"'

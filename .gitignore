@@ -136,6 +136,8 @@ scheduler/data/store/images
 !scheduler/data/store/images/default.png
 !scheduler/data/store/images/delete.png
 !scheduler/data/store/images/edit.png
+!scheduler/data/store/images/uplift.png
+!scheduler/data/store/images/downlift.png
 
 # IDE
 .idea
