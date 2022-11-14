@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QScrollArea,
     QHBoxLayout,
@@ -7,8 +8,9 @@ from PyQt5.QtWidgets import (
     QButtonGroup,
     QRadioButton,
     QInputDialog,
+    QFileDialog,
 )
-
+import xlsxwriter
 import scheduler.config as config
 from scheduler.data.models.schedule import Schedule, Day
 from scheduler.data.models.structure import Group, Lesson, Classroom
@@ -205,7 +207,8 @@ class DayEventHolder(QWidget):
         if self.classroom.id > -1 and any(
             i.classrooms[self.index].id == self.classroom.id
             for i in Day.objects.values()
-            if i.classrooms[self.index].id > -1
+            if isinstance(i, Day)
+            and i.classrooms[self.index].id > -1
             and i.id != self.day.id
             and i.day_order == self.day.day_order
         ):
@@ -213,7 +216,8 @@ class DayEventHolder(QWidget):
         if self.lesson.id > -1 and any(
             i.lessons[self.index].teacher.id == self.lesson.teacher.id
             for i in Day.objects.values()
-            if i.lessons[self.index].id > -1
+            if isinstance(i, Day)
+            and i.lessons[self.index].id > -1
             and i.id != self.day.id
             and i.day_order == self.day.day_order
         ):
@@ -333,4 +337,40 @@ class ScheduleEditDialog(Ui_Dialog, QDialog):
             self.update_content()
 
     def export(self):
-        print(self.groupSelect.currentData())
+        filename = QFileDialog.getSaveFileName(
+            self, "Save excel file", "", "Audio Files (*.xlsx)"
+        )[0]
+        if filename.endswith(".xlsx"):
+            with xlsxwriter.Workbook(filename) as workbook:
+                try:
+                    worksheet = workbook.add_worksheet()
+
+                    for i, group in enumerate(Group.objects.values()):
+                        week = Schedule.get_week(group)
+                        left_col = i * 5
+                        worksheet.merge_range(0, left_col, 0, left_col + 3, str(group))
+                        cursor = 2
+                        for day in week.days:
+                            worksheet.merge_range(
+                                cursor, left_col, cursor, left_col + 3, str(day)
+                            )
+                            cursor += 1
+                            for j, (lesson, classroom) in enumerate(
+                                zip(day.lessons, day.classrooms)
+                            ):
+                                worksheet.write(cursor, left_col, j + 1)
+                                worksheet.merge_range(
+                                    cursor,
+                                    left_col + 1,
+                                    cursor,
+                                    left_col + 2,
+                                    str(lesson),
+                                )
+                                worksheet.write(cursor, left_col + 3, str(classroom))
+                                cursor += 1
+                            cursor += 1
+                    workbook.close()
+                except Exception as err:
+                    print(err)
+        elif filename:
+            ErrorDialog(self, "Недопустимый формат").exec()

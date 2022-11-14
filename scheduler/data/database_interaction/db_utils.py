@@ -79,6 +79,9 @@ def delete_db(name):
 
 
 def get_dbs():
+    """
+    Returns names of all dbs in store dir
+    """
     result = []
     for filename in glob.glob(os.path.join(STORE_DIR, "*.sqlite")):
         name = os.path.splitext(os.path.basename(filename))[0]

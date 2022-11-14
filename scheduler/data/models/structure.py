@@ -3,6 +3,7 @@ from .fields import *
 from scheduler.util import make_string_short
 
 
+# Model with name
 class NamedModel(DBModel):
     name = StringField("name", russian_name="Имя")
     length = 20

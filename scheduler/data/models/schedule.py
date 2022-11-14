@@ -26,18 +26,24 @@ class Day(DBModel):
     }
 
     def add_empty(self):
-        self.classrooms.append(Field.ObjectHolder(self.null, self.__class__.classrooms))
-        self.lessons.append(Field.ObjectHolder(self.null, self.__class__.lessons))
+        self.classrooms.append(
+            ForeignField.ObjectHolder(self.objects[-1], self.__class__.classrooms)
+        )
+        self.lessons.append(
+            ForeignField.ObjectHolder(self.objects[-1], self.__class__.lessons)
+        )
 
     def remove_day_item_at(self, index):
         del self.classrooms[index]
         del self.lessons[index]
 
     def set_lesson(self, index, lesson):
-        self.lessons[index].value = lesson
+        self.lessons[index] = ForeignField.ObjectHolder(lesson, self.__class__.lessons)
 
     def set_classroom(self, index, classroom):
-        self.classrooms[index].value = classroom
+        self.classrooms[index] = ForeignField.ObjectHolder(
+            classroom, self.__class__.classrooms
+        )
 
     def uplift_at(self, i):
         if not i:

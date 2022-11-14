@@ -1,7 +1,6 @@
 import os.path
 
 from PIL.ImageQt import QImage
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtWidgets import (
     QVBoxLayout,
@@ -10,8 +9,6 @@ from PyQt5.QtWidgets import (
     QDialogButtonBox,
     QAbstractButton,
     QBoxLayout,
-    QStyleOption,
-    QStyle,
 )
 
 from scheduler.config import IMAGES_DIR
@@ -63,7 +60,8 @@ class PicButton(QAbstractButton):
     def set_max_dimension(self, value):
         w, h = self.pixmap.width(), self.pixmap.height()
         k = max(w, h) / value
-        w, h = int(w / k), int(h / k)
+        if k:
+            w, h = int(w / k), int(h / k)
         self.setFixedSize(w, h)
 
     def sizeHint(self):
@@ -135,24 +133,3 @@ class ConfirmDialog(MessageDialog):
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
         return self.buttonBox
-
-
-class SuperQLabel(QLabel):
-    def __init__(self, *args, **kwargs):
-        super(SuperQLabel, self).__init__(*args, **kwargs)
-
-        self.textalignment = Qt.AlignLeft | Qt.TextWrapAnywhere
-        self.isTextLabel = True
-        self.align = None
-
-    def paintEvent(self, event):
-
-        opt = QStyleOption()
-        opt.initFrom(self)
-        painter = QPainter(self)
-
-        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
-
-        self.style().drawItemText(
-            painter, self.rect(), self.textalignment, self.palette(), True, self.text()
-        )

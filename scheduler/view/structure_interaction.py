@@ -279,7 +279,7 @@ class EditListDialog(ItemListDialog):
         self.holders = dict()
 
     def remove_holder(self, model_holder):
-        self.layout().removeWidget(model_holder)
+        self.update_objects()
 
     def get_header_widgets(self):
         layout = QHBoxLayout()

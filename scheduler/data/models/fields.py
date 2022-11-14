@@ -50,25 +50,30 @@ class Field:
         if default is not None:
             self.modifiers.append(f"DEFAULT {default}")
 
+    # Help method for creating tables in dbs
     def __str__(self):
         modifiers = " ".join(self.modifiers)
         if modifiers:
             return " ".join([self.name, self.field_type, modifiers])
         return " ".join([self.name, self.field_type])
 
+    # Returns ObjectHolder instance
     def create_holder(self, *args, **kwargs):
         kwargs["parent"] = self
         return self.__class__.ObjectHolder(*args, **kwargs)
 
+    # Returns PyQT5 widgets that describe the field and could be changed
     def get_widget_for_change(self, context, value):
         return QLabel(str(value), context), lambda: None
 
+    # Returns PyQT5 widgets that describe the field
     def get_widget_for_info(self, context, value):
         return QLabel(str(value), context)
 
     def check_val(self, val):
         return bool(val)
 
+    # Wrapper for values
     class ObjectHolder:
         def __init__(self, obj, parent=None):
             self._value = obj
@@ -157,7 +162,8 @@ class ImageField(StringField):
             image_name = Field.ObjectHolder(value)
 
             img = PicButton(
-                context, value or self.default or config.DEFAULT_TEACHER_IMG
+                context,
+                value or self.default.replace("'", "") or config.DEFAULT_TEACHER_IMG,
             )
             img.clicked.connect(lambda: self.show_img(context, image_name.value))
             img.set_max_dimension(self.image_size)
@@ -245,7 +251,7 @@ class ForeignField(Field):
 
     @staticmethod
     def show_info(context, holder):
-        if holder.value is None:
+        if holder.value is None or holder.value.id < 1:
             ErrorDialog(context, "Значение неопределено").exec()
         else:
             InfoModelDialog(context, holder.value).exec()
@@ -267,6 +273,16 @@ class ForeignField(Field):
 
         def to_sql(self):
             return self._value.id
+
+        @property
+        def value(self):
+            if self._value.id in self._value.__class__.objects:
+                return self._value
+            return self._value.__class__.objects[-1]
+
+        @value.setter
+        def value(self, val):
+            self._value = val
 
 
 class ListField(Field):
@@ -293,7 +309,7 @@ class ListField(Field):
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, holders, parent):
             if not isinstance(holders, Iterable):
-                raise TypeError('Value "holders" must be iterable')
+                raise TypeError(f'Value "holders" must be iterable, not {holders}')
             if isinstance(holders, str):
                 holders = [
                     parent.list_item_type.ObjectHolder(parent.manager[i], self)
