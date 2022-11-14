@@ -1,6 +1,15 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QScrollArea, QHBoxLayout, QWidget, QPushButton, QFormLayout, QButtonGroup, QRadioButton, \
-    QCheckBox, QComboBox
+from PyQt5.QtWidgets import (
+    QScrollArea,
+    QHBoxLayout,
+    QWidget,
+    QPushButton,
+    QFormLayout,
+    QButtonGroup,
+    QRadioButton,
+    QCheckBox,
+    QComboBox,
+)
 
 import scheduler.config as config
 from .core import *
@@ -10,7 +19,7 @@ class EditModelDialog(QDialog):
     def __init__(self, parent, model):
         super().__init__(parent)
         self.model = model
-        self.setWindowTitle('Изменить ' + str(model))
+        self.setWindowTitle("Изменить " + str(model))
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -37,7 +46,7 @@ class EditModelDialog(QDialog):
             if not field.read_only:
                 setattr(self.model, field.name, self.get_value_funcs[field.name]())
         self.model.save()
-        if hasattr(self.parent(), 'update_model_info'):
+        if hasattr(self.parent(), "update_model_info"):
             self.parent().update_model_info(self.model)
 
 
@@ -46,7 +55,7 @@ class CreateModelDialog(QDialog):
         super().__init__(parent)
         self.cls = cls
 
-        self.setWindowTitle('Создать ' + cls.__name__)
+        self.setWindowTitle("Создать " + cls.__name__)
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -57,11 +66,11 @@ class CreateModelDialog(QDialog):
         self.get_value_funcs = dict()
 
         for field in cls.fields:
-            if field.name == 'id':
+            if field.name == "id":
                 continue
             widget, func = field.get_widget_for_change(self, None)
             self.get_value_funcs[field.name] = func
-            self.container.addRow(field.russian_name + ':', widget)
+            self.container.addRow(field.russian_name + ":", widget)
 
         self.container.addWidget(self.buttonBox)
         self.setLayout(self.container)
@@ -74,11 +83,11 @@ class CreateModelDialog(QDialog):
                 if field.check_val(val):
                     kwargs[field.name] = val
                 else:
-                    ErrorDialog(self, 'Не все поля заполнены').exec()
+                    ErrorDialog(self, "Не все поля заполнены").exec()
                     return
         model = self.cls.new(**kwargs)
         super().accept()
-        if hasattr(self.parent(), 'add_model'):
+        if hasattr(self.parent(), "add_model"):
             self.parent().add_model(model)
 
 
@@ -87,7 +96,7 @@ class InfoModelDialog(QDialog):
         super().__init__(parent)
         self.model = model
 
-        self.setWindowTitle('Информация о ' + str(model))
+        self.setWindowTitle("Информация о " + str(model))
 
         QBtn = QDialogButtonBox.Ok
         self.buttonBox = QDialogButtonBox(QBtn)
@@ -117,7 +126,7 @@ class ModelHolder(QWidget):
         self.id_widget.setFixedWidth(50)
         self.name_widget = QLabel(str(self.model))
         self.name_widget.setFixedWidth(120)
-        self.more_btn = QPushButton('Подробнее')
+        self.more_btn = QPushButton("Подробнее")
         self.more_btn.clicked.connect(self.show_more)
         self.container = QHBoxLayout()
 
@@ -132,7 +141,6 @@ class ModelHolder(QWidget):
 
 
 class EditableModelHolder(ModelHolder):
-
     def setupUI(self):
         super().setupUI()
         self.delete_btn = PicButton(self.p, config.DELETE_IMG)
@@ -230,8 +238,12 @@ class ItemListDialog(QDialog):
             self.objects_layout.itemAt(i).widget().setParent(None)
 
         objects = self.objects
-        if isinstance(objects, dict) and all(hasattr(i, 'id') for i in self.objects.values()):
-            objects = sorted(filter(lambda x: x.id > 0, self.objects.values()), key=lambda x: x.id)
+        if isinstance(objects, dict) and all(
+            hasattr(i, "id") for i in self.objects.values()
+        ):
+            objects = sorted(
+                filter(lambda x: x.id > 0, self.objects.values()), key=lambda x: x.id
+            )
 
         for obj in objects:
             put_in_layout(self.get_row(obj), self.objects_layout)
@@ -257,7 +269,7 @@ class ItemListDialog(QDialog):
 
 class EditListDialog(ItemListDialog):
     def __init__(self, parent, classes):
-        super().__init__(parent, classes[0].objects, 'Редактировать базы данных')
+        super().__init__(parent, classes[0].objects, "Редактировать базы данных")
 
         assert len(classes) > 0
 
@@ -274,7 +286,7 @@ class EditListDialog(ItemListDialog):
         self.select_class = QComboBox()
         for cls in self.classes:
             self.select_class.addItem(cls.plural_class_name, cls)
-        new_model_btn = QPushButton('Создать')
+        new_model_btn = QPushButton("Создать")
         new_model_btn.clicked.connect(self.create_model)
         layout.addWidget(self.select_class)
         layout.addWidget(new_model_btn)
@@ -307,7 +319,7 @@ class EditListDialog(ItemListDialog):
 
 
 class InfoItemListDialog(ItemListDialog):
-    def __init__(self, parent, objects, name='Список объектов'):
+    def __init__(self, parent, objects, name="Список объектов"):
         super().__init__(parent, objects, name)
 
     def get_row(self, obj):
@@ -316,7 +328,7 @@ class InfoItemListDialog(ItemListDialog):
 
 
 class SelectOneItemListDialog(InfoItemListDialog):
-    def __init__(self, parent, objects, name='Выбрать элемент'):
+    def __init__(self, parent, objects, name="Выбрать элемент"):
         super().__init__(parent, objects, name)
         self.btn_group = QButtonGroup()
         self.selected = None
@@ -344,7 +356,7 @@ class SelectOneItemListDialog(InfoItemListDialog):
 
 
 class SelectManyItemListDialog(SelectOneItemListDialog):
-    def __init__(self, parent, objects, name='Выбрать элементы'):
+    def __init__(self, parent, objects, name="Выбрать элементы"):
         super().__init__(parent, objects, name)
         self.selected = []
 

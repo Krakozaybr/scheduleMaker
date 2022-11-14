@@ -1,13 +1,21 @@
-from PyQt5.QtWidgets import QScrollArea, QHBoxLayout, QWidget, QPushButton, QButtonGroup, QRadioButton, QInputDialog
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import (
+    QScrollArea,
+    QHBoxLayout,
+    QWidget,
+    QPushButton,
+    QButtonGroup,
+    QRadioButton,
+    QInputDialog,
+)
 
 import scheduler.config as config
-from scheduler.data.models.schedule import Schedule
+from scheduler.data.models.schedule import Schedule, Day
 from scheduler.data.models.structure import Group, Lesson, Classroom
 from scheduler.util import make_string_short
 from .core import *
 from .skeletons.schedule_window import Ui_Dialog
 from .structure_interaction import ItemListDialog, SelectOneItemListDialog
-from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class ScheduleHolder(QWidget):
@@ -37,16 +45,13 @@ class ScheduleHolder(QWidget):
 
     def rename(self):
         text, ok = QInputDialog.getMultiLineText(
-            self,
-            'Изменить название',
-            'Введите название:',
-            text=self.name
+            self, "Изменить название", "Введите название:", text=self.name
         )
         if ok:
             text = text.strip()
             res = Schedule.rename(self.name, text)
             if not res:
-                ErrorDialog(self, 'Переименование невозможно').exec()
+                ErrorDialog(self, "Переименование невозможно").exec()
             else:
                 self.name = text
                 self.name_label.setText(text)
@@ -64,8 +69,8 @@ class ScheduleHolder(QWidget):
 
 class ScheduleSelectDialog(ItemListDialog):
     def __init__(self, parent):
-        super().__init__(parent, Schedule.get_all_schedules(), 'Расписания')
-        self.setWindowTitle('Выбрать расписание')
+        super().__init__(parent, Schedule.get_all_schedules(), "Расписания")
+        self.setWindowTitle("Выбрать расписание")
 
         self.buttonGroup = QButtonGroup()
         self.holders = dict()
@@ -73,7 +78,7 @@ class ScheduleSelectDialog(ItemListDialog):
         self.result = None
 
     def get_header_widgets(self):
-        self.create_btn = QPushButton('Добавить расписание')
+        self.create_btn = QPushButton("Добавить расписание")
         self.create_btn.clicked.connect(self.create_schedule)
         return [self.create_btn]
 
@@ -89,14 +94,18 @@ class ScheduleSelectDialog(ItemListDialog):
         return self.holders[obj]
 
     def create_schedule(self):
-        name, ok = QInputDialog.getMultiLineText(self, 'Добавить расписание', 'Введите название:')
+        name, ok = QInputDialog.getMultiLineText(
+            self, "Добавить расписание", "Введите название:"
+        )
         if ok:
             name = name.strip()
             if Schedule.create(name):
                 self.objects = Schedule.get_all_schedules()
                 self.update_objects()
             else:
-                ErrorDialog(self, 'Не удалось создать расписание с таким названием').exec()
+                ErrorDialog(
+                    self, "Не удалось создать расписание с таким названием"
+                ).exec()
 
     def accept(self):
         super().accept()
@@ -132,17 +141,19 @@ class DayEventHolder(QWidget):
         downlift_btn.clicked.connect(self.downlift)
         delete_btn.clicked.connect(self.delete_lesson)
 
-        lesson_label = SuperQLabel(str(lesson))
-        lesson_label.setAlignment(Qt.AlignCenter)
-        lesson_label.setFixedHeight(uplift_btn.height())
-        classroom_label = SuperQLabel(str(classroom))
-        classroom_label.setAlignment(Qt.AlignCenter)
-        classroom_label.setFixedHeight(uplift_btn.height())
+        self.lesson_label = QLabel(str(lesson))
+        self.lesson_label.setFixedHeight(uplift_btn.height())
+        self.lesson_label.setAlignment(Qt.AlignCenter)
+        self.classroom_label = QLabel(str(classroom))
+        self.classroom_label.setAlignment(Qt.AlignCenter)
+        self.classroom_label.setFixedHeight(uplift_btn.height())
+
+        self.check_if_overlap()
 
         layout.addWidget(QLabel(str(self.index + 1)))
-        layout.addWidget(lesson_label)
+        layout.addWidget(self.lesson_label)
         layout.addWidget(change_lesson_btn)
-        layout.addWidget(classroom_label)
+        layout.addWidget(self.classroom_label)
         layout.addWidget(change_classroom_btn)
         layout.addWidget(uplift_btn)
         layout.addWidget(downlift_btn)
@@ -170,13 +181,13 @@ class DayEventHolder(QWidget):
         if self.day.uplift_at(self.index):
             self.update_parent()
         else:
-            ErrorDialog(self, 'Операция невозможна')
+            ErrorDialog(self, "Операция невозможна")
 
     def downlift(self):
         if self.day.downlift_at(self.index):
             self.update_parent()
         else:
-            ErrorDialog(self, 'Операция невозможна')
+            ErrorDialog(self, "Операция невозможна")
 
     def delete_lesson(self):
         dialog = ConfirmDialog(self)
@@ -185,13 +196,36 @@ class DayEventHolder(QWidget):
             self.day.remove_day_item_at(self.index)
             self.update_parent()
 
+    def check_if_overlap(self):
+        style = """
+            background: red;
+            padding: 2px;
+            color: white;
+            """
+        if self.classroom.id > -1 and any(
+            i.classrooms[self.index].id == self.classroom.id
+            for i in Day.objects.values()
+            if i.classrooms[self.index].id > -1
+            and i.id != self.day.id
+            and i.day_order == self.day.day_order
+        ):
+            self.classroom_label.setStyleSheet(style)
+        if self.lesson.id > -1 and any(
+            i.lessons[self.index].teacher.id == self.lesson.teacher.id
+            for i in Day.objects.values()
+            if i.lessons[self.index].id > -1
+            and i.id != self.day.id
+            and i.day_order == self.day.day_order
+        ):
+            self.lesson_label.setStyleSheet(style)
+
 
 class DayHolder(QWidget):
     def __init__(self, parent, day):
         super().__init__()
         self.parent_dialog = parent
         self.day = day
-        self.add_lesson_btn = QPushButton('Добавить урок')
+        self.add_lesson_btn = QPushButton("Добавить урок")
 
         layout = QVBoxLayout()
         self.lessons_layout = QVBoxLayout()
@@ -214,14 +248,7 @@ class DayHolder(QWidget):
 
         for i, (lesson, classroom) in enumerate(day_items):
             self.lessons_layout.addWidget(
-                DayEventHolder(
-                    self,
-                    lesson,
-                    classroom,
-                    self.repaint_all,
-                    i,
-                    self.day
-                )
+                DayEventHolder(self, lesson, classroom, self.repaint_all, i, self.day)
             )
         self.parent_dialog.update_layout()
 
@@ -262,10 +289,14 @@ class ScheduleEditDialog(Ui_Dialog, QDialog):
             self.scheduleSpace.setParent(None)
 
             self.scheduleSpace = QtWidgets.QWidget(self)
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+            sizePolicy = QtWidgets.QSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding
+            )
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
-            sizePolicy.setHeightForWidth(self.scheduleSpace.sizePolicy().hasHeightForWidth())
+            sizePolicy.setHeightForWidth(
+                self.scheduleSpace.sizePolicy().hasHeightForWidth()
+            )
             self.scheduleSpace.setSizePolicy(sizePolicy)
             self.scheduleSpace.setObjectName("scheduleSpace")
             self.verticalLayout.addWidget(self.scheduleSpace)

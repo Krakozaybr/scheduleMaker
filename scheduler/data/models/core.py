@@ -7,7 +7,7 @@ from ..database_interaction.orm import get, insert, update_by_id, delete_by_id
 def staticinit(method):
     @property
     def prop(cls):
-        prop_name = f'_{cls.__name__}_{method.__name__}'
+        prop_name = f"_{cls.__name__}_{method.__name__}"
         if not hasattr(cls, prop_name):
             prop_val = method(cls)
             setattr(cls, prop_name, prop_val)
@@ -21,18 +21,18 @@ class Null:
         self.id = -1
 
     def __str__(self):
-        return 'Пусто'
+        return "Пусто"
 
 
 class DBModel:
     null = Null()
 
     id = IntegerField(
-        'id',
+        "id",
         primary_key=True,
         autoincrement=True,
         read_only=True,
-        russian_name='Идентификатор'
+        russian_name="Идентификатор",
     )
     _fields: list[Field]
 
@@ -56,7 +56,7 @@ class DBModel:
 
     @classmethod
     def new(cls, **kwargs):
-        kwargs['id'] = cls.max_id.value + 1
+        kwargs["id"] = cls.max_id.value + 1
         result = cls(**kwargs)
         result.created = True
         result.save()
@@ -68,7 +68,7 @@ class DBModel:
                 self.db_name,
                 self.get_table_name(),
                 tuple(field.name for field in self.fields),
-                self.get_data()
+                self.get_data(),
             )
             self.created = False
         else:
@@ -76,8 +76,8 @@ class DBModel:
                 self.db_name,
                 self.get_table_name(),
                 self.id,
-                tuple(field.name for field in self.fields if field.name != 'id'),
-                self.get_data_without_id()
+                tuple(field.name for field in self.fields if field.name != "id"),
+                self.get_data_without_id(),
             )
 
     def delete(self):
@@ -101,11 +101,11 @@ class DBModel:
 
     @classmethod
     def get_table_name(cls) -> str:
-        return cls.__name__.lower() + 's'
+        return cls.__name__.lower() + "s"
 
     @classmethod
     def to_sql(cls):
-        return '\n\t' + ',\n\t'.join(map(str, cls.fields)) + '\n'
+        return "\n\t" + ",\n\t".join(map(str, cls.fields)) + "\n"
 
     @classmethod
     @staticinit
@@ -113,15 +113,15 @@ class DBModel:
         return [
             getattr(cls, i)
             for i in dir(cls)
-            if i != 'fields' and isinstance(getattr(cls, i), Field)
+            if i != "fields" and isinstance(getattr(cls, i), Field)
         ]
 
     @classmethod
     @staticinit
     def plural_class_name(cls):
-        if hasattr(cls, '_plural_class_name'):
-            return getattr(cls, '_plural_class_name')
-        return cls.__name__ + 's'
+        if hasattr(cls, "_plural_class_name"):
+            return getattr(cls, "_plural_class_name")
+        return cls.__name__ + "s"
 
     @classmethod
     @staticinit
@@ -136,7 +136,7 @@ class DBModel:
     @classmethod
     @staticinit
     def db_name(cls):
-        return Field.ObjectHolder('')
+        return Field.ObjectHolder("")
 
     @classmethod
     def load_objects(cls, db_name):
@@ -151,4 +151,8 @@ class DBModel:
         return [self.get_holder(field.name).to_sql() for field in self.fields]
 
     def get_data_without_id(self):
-        return [self.get_holder(field.name).to_sql() for field in self.fields if field.name != 'id']
+        return [
+            self.get_holder(field.name).to_sql()
+            for field in self.fields
+            if field.name != "id"
+        ]

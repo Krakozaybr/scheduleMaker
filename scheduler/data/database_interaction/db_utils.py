@@ -1,8 +1,9 @@
-import sqlite3
-import os
-from scheduler.config import STORE_DIR, MAIN_DB_NAME
-import scheduler.data.database_interaction.sql_commands as sql_commands
 import glob
+import os
+import sqlite3
+
+import scheduler.data.database_interaction.sql_commands as sql_commands
+from scheduler.config import STORE_DIR
 
 
 class DatabaseAlreadyExistsException(Exception):
@@ -15,8 +16,8 @@ class DatabaseDoesNotExist(Exception):
 
 def _get_db_filename(name):
     filename = os.path.join(STORE_DIR, name)
-    if not filename.endswith('.sqlite'):
-        filename += '.sqlite'
+    if not filename.endswith(".sqlite"):
+        filename += ".sqlite"
     return filename
 
 
@@ -35,10 +36,12 @@ def check_db_exists(func):
     """
     Decorator. Checks whether database with name = {name} exists
     """
+
     def wrapper(name, *args, **kwargs):
         if not db_exists(name):
             raise DatabaseDoesNotExist
         return func(_get_db_filename(name), *args, **kwargs)
+
     return wrapper
 
 
@@ -57,7 +60,7 @@ def create_db_with_models(name: str, *models):
     for model in models:
         command = sql_commands.CREATE_DB_TABLE % (
             model.get_table_name(),
-            model.to_sql()
+            model.to_sql(),
         )
         create_commands.append(command)
     _create(create_commands, filename)
@@ -77,7 +80,7 @@ def delete_db(name):
 
 def get_dbs():
     result = []
-    for filename in glob.glob(os.path.join(STORE_DIR, '*.sqlite')):
+    for filename in glob.glob(os.path.join(STORE_DIR, "*.sqlite")):
         name = os.path.splitext(os.path.basename(filename))[0]
         result.append(name)
     return result

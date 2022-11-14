@@ -3,8 +3,16 @@ import os.path
 from PIL.ImageQt import QImage
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QPixmap
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, \
-    QDialogButtonBox, QAbstractButton, QBoxLayout, QStyleOption, QStyle
+from PyQt5.QtWidgets import (
+    QVBoxLayout,
+    QLabel,
+    QDialog,
+    QDialogButtonBox,
+    QAbstractButton,
+    QBoxLayout,
+    QStyleOption,
+    QStyle,
+)
 
 from scheduler.config import IMAGES_DIR
 
@@ -19,7 +27,7 @@ def put_in_layout(item, layout):
 class ImageDialog(QDialog):
     def __init__(self, parent, pixmap):
         super().__init__(parent)
-        self.setWindowTitle('Изображение')
+        self.setWindowTitle("Изображение")
         QBtn = QDialogButtonBox.Ok
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -70,7 +78,7 @@ class PicButton(QAbstractButton):
 class MessageDialog(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowTitle('Сообщение')
+        self.setWindowTitle("Сообщение")
         layout = QVBoxLayout()
 
         content = self.get_content()
@@ -96,7 +104,7 @@ class ErrorDialog(MessageDialog):
     def __init__(self, parent, text):
         self.text = text
         super().__init__(parent)
-        self.setWindowTitle('Ошибка')
+        self.setWindowTitle("Ошибка")
 
     def get_content(self):
         return QLabel(self.text)
@@ -111,7 +119,7 @@ class ErrorDialog(MessageDialog):
 class ConfirmDialog(MessageDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowTitle('Подтвердить действие')
+        self.setWindowTitle("Подтвердить действие")
         self.confirmed = False
 
     def accept(self):
@@ -119,7 +127,7 @@ class ConfirmDialog(MessageDialog):
         super().accept()
 
     def get_content(self):
-        return QLabel('Вы уверены?')
+        return QLabel("Вы уверены?")
 
     def get_button_box(self):
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -145,5 +153,6 @@ class SuperQLabel(QLabel):
 
         self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
 
-        self.style().drawItemText(painter, self.rect(),
-                                  self.textalignment, self.palette(), True, self.text())
+        self.style().drawItemText(
+            painter, self.rect(), self.textalignment, self.palette(), True, self.text()
+        )

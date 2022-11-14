@@ -4,7 +4,7 @@ from .sql_commands import SELECT_ALL, UPDATE_BY_ID, INSERT, DELETE_BY_ID
 
 
 @check_db_exists
-def get(db_name: str, table: str, fields='*'):
+def get(db_name: str, table: str, fields="*"):
     """
     Takes all values from *fields and returns them
     :param db_name: name of the database
@@ -15,13 +15,18 @@ def get(db_name: str, table: str, fields='*'):
     """
     with sqlite3.connect(db_name) as con:
         cur = con.cursor()
-        command = SELECT_ALL % (', '.join(fields), table)
+        command = SELECT_ALL % (", ".join(fields), table)
         return cur.execute(command).fetchall()
 
 
 @check_db_exists
-def update_by_ids(db_name: str, table: str, element_id: int,
-                  fields: tuple[str], values_sets: tuple[tuple[str]]):
+def update_by_ids(
+    db_name: str,
+    table: str,
+    element_id: int,
+    fields: tuple[str],
+    values_sets: tuple[tuple[str]],
+):
     """
     Sets field values of the table in the db with name = {db_name}
     to *values
@@ -37,16 +42,18 @@ def update_by_ids(db_name: str, table: str, element_id: int,
             new_vals = []
             for key, val in zip(fields, values):
                 if isinstance(val, int):
-                    new_vals.append(f'{key} = {val}')
+                    new_vals.append(f"{key} = {val}")
                 else:
-                    val = val.replace('"', '')
+                    val = val.replace('"', "")
                     new_vals.append(f'{key} = "{val}"')
-            command = UPDATE_BY_ID % (table, ', '.join(new_vals), element_id)
+            command = UPDATE_BY_ID % (table, ", ".join(new_vals), element_id)
             cur.execute(command)
 
 
 @check_db_exists
-def update_by_id(db_name: str, table: str, element_id: int, fields: tuple[str], values: tuple[str]):
+def update_by_id(
+    db_name: str, table: str, element_id: int, fields: tuple[str], values: tuple[str]
+):
     """
     Sets field values of the table in the db with name = {db_name}
     to *values
@@ -60,7 +67,9 @@ def update_by_id(db_name: str, table: str, element_id: int, fields: tuple[str], 
 
 
 @check_db_exists
-def insert_many(db_name: str, table: str, fields: tuple[str], values_sets: tuple[tuple[str]]):
+def insert_many(
+    db_name: str, table: str, fields: tuple[str], values_sets: tuple[tuple[str]]
+):
     """
     Inserts into table of the database with name = {db_name}
     *fields and set them *values
@@ -77,9 +86,9 @@ def insert_many(db_name: str, table: str, fields: tuple[str], values_sets: tuple
                 if isinstance(val, int):
                     new_vals.append(str(val))
                 else:
-                    val = val.replace('"', '')
+                    val = val.replace('"', "")
                     new_vals.append(f'"{val}"')
-            command = INSERT % (table, ', '.join(fields), ', '.join(new_vals))
+            command = INSERT % (table, ", ".join(fields), ", ".join(new_vals))
             cur.execute(command)
 
 

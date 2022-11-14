@@ -6,23 +6,35 @@ import random
 from typing import Iterable
 
 from PyQt5.QtCore import QRegExp
-from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit, QVBoxLayout, QPushButton, QFileDialog, QTextBrowser
+from PyQt5.QtWidgets import (
+    QLabel,
+    QLineEdit,
+    QTextEdit,
+    QVBoxLayout,
+    QPushButton,
+    QFileDialog,
+    QTextBrowser,
+)
 
 import scheduler.config as config
-from scheduler.view.core import PicButton, ImageDialog, \
-    ErrorDialog
-from scheduler.view.structure_interaction import InfoModelDialog, SelectOneItemListDialog
+from scheduler.view.core import PicButton, ImageDialog, ErrorDialog
+from scheduler.view.structure_interaction import (
+    InfoModelDialog,
+    SelectOneItemListDialog,
+)
 
 
 class Field:
-    def __init__(self,
-                 name,
-                 field_type,
-                 default=None,
-                 primary_key=False,
-                 autoincrement=False,
-                 read_only=False,
-                 russian_name=''):
+    def __init__(
+        self,
+        name,
+        field_type,
+        default=None,
+        primary_key=False,
+        autoincrement=False,
+        read_only=False,
+        russian_name="",
+    ):
         self.name = name
         self.modifiers = []
         self.field_type = field_type
@@ -32,20 +44,20 @@ class Field:
         if not russian_name:
             self.russian_name = name
         if primary_key:
-            self.modifiers.append('PRIMARY KEY')
+            self.modifiers.append("PRIMARY KEY")
         if autoincrement:
-            self.modifiers.append('AUTOINCREMENT')
+            self.modifiers.append("AUTOINCREMENT")
         if default is not None:
-            self.modifiers.append(f'DEFAULT {default}')
+            self.modifiers.append(f"DEFAULT {default}")
 
     def __str__(self):
-        modifiers = ' '.join(self.modifiers)
+        modifiers = " ".join(self.modifiers)
         if modifiers:
-            return ' '.join([self.name, self.field_type, modifiers])
-        return ' '.join([self.name, self.field_type])
+            return " ".join([self.name, self.field_type, modifiers])
+        return " ".join([self.name, self.field_type])
 
     def create_holder(self, *args, **kwargs):
-        kwargs['parent'] = self
+        kwargs["parent"] = self
         return self.__class__.ObjectHolder(*args, **kwargs)
 
     def get_widget_for_change(self, context, value):
@@ -82,11 +94,11 @@ class Field:
 
 class IntegerField(Field):
     def __init__(self, name, **kwargs):
-        super().__init__(name, 'INTEGER', **kwargs)
+        super().__init__(name, "INTEGER", **kwargs)
 
     def get_widget_for_change(self, context, value):
         if not self.read_only:
-            widget = QLineEdit('0' if value is None else str(value), context)
+            widget = QLineEdit("0" if value is None else str(value), context)
             widget.setValidator(QRegExp("[0-9]{30}"))
             return widget, widget.text
         return super().get_widget_for_change(context, value)
@@ -97,7 +109,7 @@ class IntegerField(Field):
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, val, parent):
             if not isinstance(val, int):
-                raise TypeError('Value must be int')
+                raise TypeError("Value must be int")
             super().__init__(val, parent)
 
         def to_sql(self):
@@ -106,11 +118,11 @@ class IntegerField(Field):
 
 class StringField(Field):
     def __init__(self, name, **kwargs):
-        super().__init__(name, 'TEXT', **kwargs)
+        super().__init__(name, "TEXT", **kwargs)
 
     def get_widget_for_change(self, context, value):
         if not self.read_only:
-            edit = QTextEdit('' if value is None else str(value), context)
+            edit = QTextEdit("" if value is None else str(value), context)
             return edit, edit.toPlainText
         return super().get_widget_for_change(context, value)
 
@@ -127,12 +139,12 @@ class StringField(Field):
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, val, parent):
             if not isinstance(val, str):
-                raise TypeError(f'Value must be str. Not <{type(val).__name__}>')
+                raise TypeError(f"Value must be str. Not <{type(val).__name__}>")
             super().__init__(val, parent)
 
 
 def generate_random_string(n=16):
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=n))
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
 
 
 class ImageField(StringField):
@@ -144,11 +156,13 @@ class ImageField(StringField):
 
             image_name = Field.ObjectHolder(value)
 
-            img = PicButton(context, value or self.default or config.DEFAULT_TEACHER_IMG)
+            img = PicButton(
+                context, value or self.default or config.DEFAULT_TEACHER_IMG
+            )
             img.clicked.connect(lambda: self.show_img(context, image_name.value))
             img.set_max_dimension(self.image_size)
 
-            load_btn = QPushButton('Загрузить', context)
+            load_btn = QPushButton("Загрузить", context)
             load_btn.clicked.connect(lambda: self.load_img(context, image_name, img))
 
             container.addWidget(img)
@@ -167,13 +181,17 @@ class ImageField(StringField):
     @staticmethod
     def load_img(context, holder, img):
         way = QFileDialog.getOpenFileName(
-            context, 'Выбрать файл', '', 'Файл (*.jpg);;Файл (*.png);;Файл (*.jpeg)'
+            context, "Выбрать файл", "", "Файл (*.jpg);;Файл (*.png);;Файл (*.jpeg)"
         )[0]
         if way:
             name = generate_random_string()
             while os.path.exists(os.path.join(config.IMAGES_DIR, name)):
                 name = generate_random_string()
-            dest = os.path.join(config.IMAGES_DIR, name) + '.' + os.path.basename(way).split('.')[-1]
+            dest = (
+                os.path.join(config.IMAGES_DIR, name)
+                + "."
+                + os.path.basename(way).split(".")[-1]
+            )
             shutil.copyfile(way, dest)
             holder.value = name
             img.set_image(name)
@@ -188,7 +206,7 @@ class ImageField(StringField):
 
 class ForeignField(Field):
     def __init__(self, name: str, foreign_cls, **kwargs):
-        super().__init__(name, 'INTEGER', **kwargs)
+        super().__init__(name, "INTEGER", **kwargs)
         self.manager = foreign_cls.objects
         self.foreign_cls = foreign_cls
 
@@ -196,8 +214,8 @@ class ForeignField(Field):
         if not self.read_only:
             layout = QVBoxLayout(context)
             label = QLabel(str(value), context)
-            info_btn = QPushButton('Подробнее', context)
-            edit_btn = QPushButton('Изменить', context)
+            info_btn = QPushButton("Подробнее", context)
+            edit_btn = QPushButton("Изменить", context)
 
             layout.addWidget(label)
             layout.addWidget(info_btn)
@@ -212,8 +230,10 @@ class ForeignField(Field):
 
     def get_widget_for_info(self, context, value):
         container = QVBoxLayout()
-        more_btn = QPushButton('Подробнее')
-        more_btn.clicked.connect(lambda: self.show_info(context, Field.ObjectHolder(value)))
+        more_btn = QPushButton("Подробнее")
+        more_btn.clicked.connect(
+            lambda: self.show_info(context, Field.ObjectHolder(value))
+        )
 
         container.addWidget(QLabel(str(value), context))
         container.addWidget(more_btn)
@@ -226,7 +246,7 @@ class ForeignField(Field):
     @staticmethod
     def show_info(context, holder):
         if holder.value is None:
-            ErrorDialog(context, 'Значение неопределено').exec()
+            ErrorDialog(context, "Значение неопределено").exec()
         else:
             InfoModelDialog(context, holder.value).exec()
 
@@ -251,7 +271,7 @@ class ForeignField(Field):
 
 class ListField(Field):
     def __init__(self, name: str, foreign_cls, list_item_type=Field, **kwargs):
-        super().__init__(name, 'TEXT', **kwargs)
+        super().__init__(name, "TEXT", **kwargs)
         self.manager = foreign_cls.objects
         self.foreign_cls = foreign_cls
         self.list_item_type = list_item_type
@@ -266,24 +286,37 @@ class ListField(Field):
         return QLabel(value, context)
 
     def check_val(self, val):
-        return isinstance(val, Iterable) and all(isinstance(i, self.foreign_cls) for i in val)
+        return isinstance(val, Iterable) and all(
+            isinstance(i, self.foreign_cls) for i in val
+        )
 
     class ObjectHolder(Field.ObjectHolder):
         def __init__(self, holders, parent):
             if not isinstance(holders, Iterable):
                 raise TypeError('Value "holders" must be iterable')
             if isinstance(holders, str):
-                holders = [parent.list_item_type.ObjectHolder(parent.manager[i], self) for i in json.loads(holders)]
+                holders = [
+                    parent.list_item_type.ObjectHolder(parent.manager[i], self)
+                    for i in json.loads(holders)
+                ]
             elif all(isinstance(i, int) for i in holders):
-                holders = [parent.list_item_type.ObjectHolder(parent.manager[i], self) for i in holders]
+                holders = [
+                    parent.list_item_type.ObjectHolder(parent.manager[i], self)
+                    for i in holders
+                ]
 
-            elif all(isinstance(i, parent.foreign_cls) or (hasattr(i, 'id') and i.id == -1) for i in holders):
+            elif all(
+                isinstance(i, parent.foreign_cls) or (hasattr(i, "id") and i.id == -1)
+                for i in holders
+            ):
                 holders = [parent.list_item_type.ObjectHolder(i, self) for i in holders]
             elif any(not isinstance(i, parent.foreign_cls) for i in holders):
-                raise TypeError(f'Holders are neither list of str, int or {parent.foreign_cls.__name__}')
+                raise TypeError(
+                    f"Holders are neither list of str, int or {parent.foreign_cls.__name__}"
+                )
 
             if not any(isinstance(i, Field.ObjectHolder) for i in holders):
-                raise TypeError('ObjectHolder objects are required')
+                raise TypeError("ObjectHolder objects are required")
 
             super().__init__(holders, parent)
 

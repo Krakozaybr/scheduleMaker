@@ -4,7 +4,7 @@ from scheduler.util import make_string_short
 
 
 class NamedModel(DBModel):
-    name = StringField('name', russian_name='Имя')
+    name = StringField("name", russian_name="Имя")
     length = 20
 
     def __str__(self):
@@ -12,21 +12,23 @@ class NamedModel(DBModel):
 
 
 class Group(NamedModel):
-    _plural_class_name = 'Классы'
+    _plural_class_name = "Классы"
 
 
 class Teacher(NamedModel):
-    _plural_class_name = 'Учителя'
-    image = ImageField('image', default=f"'{config.DEFAULT_TEACHER_IMG}'", russian_name='Изображение')
+    _plural_class_name = "Учителя"
+    image = ImageField(
+        "image", default=f"'{config.DEFAULT_TEACHER_IMG}'", russian_name="Изображение"
+    )
 
 
 class Classroom(NamedModel):
-    _plural_class_name = 'Кабинеты'
+    _plural_class_name = "Кабинеты"
 
 
 class Lesson(NamedModel):
-    _plural_class_name = 'Уроки'
-    teacher = ForeignField('teacher', Teacher, russian_name='Учитель')
+    _plural_class_name = "Уроки"
+    teacher = ForeignField("teacher", Teacher, russian_name="Учитель")
 
     def are_same(self, another):
         return another.name == self.name

@@ -41,7 +41,9 @@ class Ui_Dialog(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.groupSelect = QtWidgets.QComboBox(Dialog)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupSelect.sizePolicy().hasHeightForWidth())
@@ -55,10 +57,14 @@ class Ui_Dialog(object):
         self.line.setObjectName("line")
         self.verticalLayout.addWidget(self.line)
         self.scheduleSpace = QtWidgets.QWidget(Dialog)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.scheduleSpace.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.scheduleSpace.sizePolicy().hasHeightForWidth()
+        )
         self.scheduleSpace.setSizePolicy(sizePolicy)
         self.scheduleSpace.setObjectName("scheduleSpace")
         self.verticalLayout.addWidget(self.scheduleSpace)
