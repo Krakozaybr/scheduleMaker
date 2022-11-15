@@ -85,10 +85,9 @@ class ScheduleSelectDialog(ItemListDialog):
         return [self.create_btn]
 
     def get_button_box(self):
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        QBtn = QDialogButtonBox.Ok
         buttonBox = QDialogButtonBox(QBtn)
         buttonBox.accepted.connect(self.accept)
-        buttonBox.rejected.connect(self.reject)
         return buttonBox
 
     def get_row(self, obj):
